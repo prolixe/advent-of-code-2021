@@ -27,7 +27,7 @@ pub fn day_01() -> std::io::Result<()> {
 
     let increase3_count = report
         .windows(3)
-        .map(|entries| entries[0] + entries[1] + entries[2])
+        .map(|entries| entries.iter().sum())
         .collect::<Vec<i32>>()
         .windows(2)
         .filter(|entries| entries[0] < entries[1])
