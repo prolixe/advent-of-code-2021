@@ -25,5 +25,18 @@ pub fn day_01() -> std::io::Result<()> {
         increase_count,
     );
 
+    let increase3_count = report
+        .windows(3)
+        .map(|entries| entries[0] + entries[1] + entries[2])
+        .collect::<Vec<i32>>()
+        .windows(2)
+        .filter(|entries| entries[0] < entries[1])
+        .count();
+
+    println!(
+        "There are {} sums that are larger than the previous sum",
+        increase3_count,
+    );
+
     return Ok(());
 }
