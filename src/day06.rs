@@ -95,7 +95,7 @@ pub fn day_06() -> Result<(), String> {
         .for_each(|f| fish_pop.add_fish(f));
 
     println!("Fish pop day: {}", fish_pop);
-    let max_days = 80;
+    let max_days = 256;
     for i in 1..=max_days {
         fish_pop.step();
         println!("Fish pop day: {}", fish_pop);
