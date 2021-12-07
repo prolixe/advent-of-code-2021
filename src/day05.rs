@@ -78,7 +78,28 @@ impl Segment {
                 .map(|x| Point { y: self.start.y, x })
                 .collect::<Vec<_>>();
         }
-        Vec::new()
+        // Calculate diagonal lines
+        // Assume perfect diagonal
+        let (start, end) = if self.start.x < self.end.x {
+            (self.start, self.end)
+        } else {
+            (self.end, self.start)
+        };
+
+        let next = if start.y < end.y {
+            // Increase the y if the start y is lower
+            |y: i32, i: usize| y + i as i32
+        } else {
+            |y: i32, i: usize| y - i as i32
+        };
+
+        return (start.x..=end.x)
+            .enumerate()
+            .map(|(c, x)| Point {
+                x,
+                y: next(start.y, c),
+            })
+            .collect::<_>();
     }
 }
 
@@ -111,9 +132,6 @@ pub fn day_05() -> Result<(), String> {
 
     segments.iter().for_each(|d| diagram.add(d));
 
-    for (p, c) in diagram.map.iter() {
-        println!("point: {:?}, count {}", p, c);
-    }
     let overlap_count = diagram.map.iter().filter(|(_, c)| **c > 1).count();
     println!("Overlap count: {}", overlap_count);
 
