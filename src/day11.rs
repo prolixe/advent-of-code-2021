@@ -129,6 +129,10 @@ impl Map<Octopus> {
 
         flash_count
     }
+
+    fn all_flashed(&self) -> bool {
+        self.octopi.iter().all(|o| o.level == 0)
+    }
 }
 
 impl fmt::Display for Map<Octopus> {
@@ -195,7 +199,7 @@ fn parse(input: &str) -> Map<Octopus> {
 
 pub fn day_11() -> Result<(), String> {
     let contents = util::read_file("./resources/day11_small.txt").expect("Could not open file");
-    //let contents = util::read_file("./resources/day11.txt").expect("Could not open file");
+    let contents = util::read_file("./resources/day11.txt").expect("Could not open file");
 
     println!("contents: \n{}", contents);
 
@@ -204,12 +208,18 @@ pub fn day_11() -> Result<(), String> {
     println!("octopi: \n{}", map);
 
     let mut total_flashes = 0;
-    for i in 0..100 {
+    for _ in 0..100 {
         total_flashes += map.step();
+    }
+    let mut step = 100;
+    while !map.all_flashed() {
+        map.step();
+        step += 1;
     }
 
     println!("octopi after 100 steps: \n{}", map);
     println!("Total flash: {}", total_flashes);
+    println!("all octopi flash at step : {}", step);
 
     return Ok(());
 }
