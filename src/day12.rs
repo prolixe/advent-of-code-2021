@@ -1,11 +1,11 @@
 use crate::util;
 use std::collections::HashSet;
 use std::collections::VecDeque;
-use std::io::BufRead;
 
 pub fn day_12() -> Result<(), String> {
-    let contents = util::read_file("./resources/day12_small.txt").expect("Could not open file");
-    //let contents = util::read_file("./resources/day12.txt").expect("Could not open file");
+    //let contents = util::read_file("./resources/day12_small.txt").expect("Could not open file");
+    //let contents = util::read_file("./resources/day12_smallest.txt").expect("Could not open file");
+    let contents = util::read_file("./resources/day12.txt").expect("Could not open file");
 
     println!("contents: \n{}", contents);
 
@@ -26,6 +26,11 @@ pub fn day_12() -> Result<(), String> {
 
     println!("edges {:?}", edges);
     println!("nodes {:?}", nodes);
+    let g = Graph::new(nodes, edges);
+
+    let mut seen: HashSet<String> = HashSet::new();
+    let result = dfs(&g, "start".to_string(), seen.clone());
+    println!("result: {:?}", result);
     Ok(())
 }
 
@@ -40,15 +45,34 @@ struct Graph<T> {
     edges: Vec<Edge<T>>,
 }
 
-impl<T> Graph<T> {
-    fn new(nodes: Vec<Node<T>>, edges: Vec<Edge<T>>) -> Self {
+impl Graph<String> {
+    fn new(nodes: Vec<Node<String>>, edges: Vec<Edge<String>>) -> Self {
         Self { nodes, edges }
+    }
+
+    fn neighbors(&self, node: Node<String>) -> Vec<Node<String>> {
+        let neighbors = self
+            .edges
+            .iter()
+            .filter(|e| e.0 == node.0)
+            .map(|e| e.1.clone().into());
+        let reverse_neighbors = self
+            .edges
+            .iter()
+            .filter(|e| e.1 == node.0)
+            .map(|e| e.0.clone().into());
+        neighbors.chain(reverse_neighbors).collect()
     }
 }
 
 impl From<&str> for Node<String> {
     fn from(s: &str) -> Self {
         Node(s.to_string())
+    }
+}
+impl From<String> for Node<String> {
+    fn from(s: String) -> Self {
+        Node(s)
     }
 }
 
@@ -61,4 +85,29 @@ impl TryFrom<&str> for Edge<String> {
             None => Err("Cannot parse value".to_string()),
         }
     }
+}
+
+fn dfs(graph: &Graph<String>, current: String, mut seen: HashSet<String>) -> Option<u32> {
+    if current == "end" {
+        println!("reached end: \n seen: {:?}", seen);
+        return Some(1);
+    }
+
+    // If current is lower, add it to the seen hash.
+    println!("in {}", current);
+    if current.to_lowercase() == current {
+        seen.insert(current.clone());
+    }
+    let current_node = Node(current.clone());
+    let mut total = 0;
+    for n in graph.neighbors(current_node) {
+        if seen.contains(&n.0) {
+            continue;
+        }
+        if let Some(count) = dfs(graph, n.0.clone(), seen.clone()) {
+            total += count;
+        }
+    }
+
+    Some(total)
 }
