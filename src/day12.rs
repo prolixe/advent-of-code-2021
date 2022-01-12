@@ -1,6 +1,5 @@
 use crate::util;
 use std::collections::HashSet;
-use std::collections::VecDeque;
 
 pub fn day_12() -> Result<(), String> {
     //let contents = util::read_file("./resources/day12_small.txt").expect("Could not open file");
@@ -29,8 +28,10 @@ pub fn day_12() -> Result<(), String> {
     let g = Graph::new(nodes, edges);
 
     let mut seen: HashSet<String> = HashSet::new();
-    let result = dfs(&g, "start".to_string(), seen.clone());
-    println!("result: {:?}", result);
+    let result = dfs_part1(&g, "start".to_string(), seen.clone());
+    println!("result part 1: {:?}", result);
+    let result = dfs_part2(&g, "start".to_string(), seen.clone(), None);
+    println!("result part 2: {:?}", result);
     Ok(())
 }
 
@@ -87,14 +88,14 @@ impl TryFrom<&str> for Edge<String> {
     }
 }
 
-fn dfs(graph: &Graph<String>, current: String, mut seen: HashSet<String>) -> Option<u32> {
+fn dfs_part1(graph: &Graph<String>, current: String, mut seen: HashSet<String>) -> Option<u32> {
     if current == "end" {
-        println!("reached end: \n seen: {:?}", seen);
+        //println!("reached end: \n seen: {:?}", seen);
         return Some(1);
     }
 
     // If current is lower, add it to the seen hash.
-    println!("in {}", current);
+    //println!("in {}", current);
     if current.to_lowercase() == current {
         seen.insert(current.clone());
     }
@@ -104,7 +105,46 @@ fn dfs(graph: &Graph<String>, current: String, mut seen: HashSet<String>) -> Opt
         if seen.contains(&n.0) {
             continue;
         }
-        if let Some(count) = dfs(graph, n.0.clone(), seen.clone()) {
+        if let Some(count) = dfs_part1(graph, n.0.clone(), seen.clone()) {
+            total += count;
+        }
+    }
+
+    Some(total)
+}
+
+fn dfs_part2(
+    graph: &Graph<String>,
+    current: String,
+    mut seen: HashSet<String>,
+    mut extra: Option<String>,
+) -> Option<u32> {
+    if current == "end" {
+        //println!("reached end: \n seen: {:?}", seen);
+        return Some(1);
+    }
+    let start = String::from("start");
+
+    // If current is lower, add it to the seen hash.
+    //println!("in {}, extra: {:?}", current, extra);
+    if current.to_lowercase() == current {
+        seen.insert(current.clone());
+    }
+    let current_node = Node(current.clone());
+    let mut total = 0;
+    for n in graph.neighbors(current_node) {
+        if seen.contains(&n.0) && extra.is_none() {
+            if start.eq(&n.0) {
+                // Don't visit start twice.
+                continue;
+            }
+            // allow small cave twice only once!
+            if let Some(count) = dfs_part1(graph, n.0.clone(), seen.clone()) {
+                total += count;
+            }
+            continue;
+        }
+        if let Some(count) = dfs_part2(graph, n.0.clone(), seen.clone(), extra.clone()) {
             total += count;
         }
     }
