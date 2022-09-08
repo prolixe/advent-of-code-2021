@@ -54,7 +54,7 @@ impl BingoBoard {
         })
     }
 
-    fn is_bingo(&self) -> bool {
+    pub fn is_bingo(&self) -> bool {
         // Check horizontal
 
         for i in 0..self.board.len() {

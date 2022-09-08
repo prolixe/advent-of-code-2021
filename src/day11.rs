@@ -198,7 +198,7 @@ fn parse(input: &str) -> Map<Octopus> {
 }
 
 pub fn day_11() -> Result<(), String> {
-    let contents = util::read_file("./resources/day11_small.txt").expect("Could not open file");
+    //let contents = util::read_file("./resources/day11_small.txt").expect("Could not open file");
     let contents = util::read_file("./resources/day11.txt").expect("Could not open file");
 
     println!("contents: \n{}", contents);
