@@ -53,7 +53,7 @@ impl fmt::Display for Paper {
             r.iter().for_each(|bn| {
                 let _ = write!(f, "{}", if *bn { "#" } else { "." });
             });
-            let _ = writeln!(f, "");
+            let _ = writeln!(f);
         });
         write!(f, "")
     }
@@ -68,19 +68,19 @@ pub fn day_13() -> Result<()> {
 
     //println!("contents: \n{}", contents);
     let (paper, folds) = parse(&contents)?;
-    println!("paper:\n{}", paper);
+    //println!("paper:\n{}", paper);
     println!("folds:\n{:?}", folds);
-    let paper = apply_fold(&paper, folds.first().unwrap()).unwrap();
+    let part_1_paper = apply_fold(&paper, folds.first().unwrap()).unwrap();
     //print!("paper:\n{}", paper);
-    println!("paper:\n{}", paper);
-    println!("Count: {}", paper.count_dots());
+    println!("Count (part 1): {}", part_1_paper.count_dots());
+    // That the 'fold' function is super appropriate for folding a transparent
+    // paper repeatedly must have been intentionnal.
+    let final_paper = folds.iter().fold(paper, |p, f| apply_fold(&p, f).unwrap());
 
+    print!("Paper (part 2):\n{}", final_paper);
     Ok(())
 }
 
-/* First, put the content into a data structure that makes senses. */
-
-/* A 2D array seems logical. Vec<Vec<bool>> */
 fn parse(contents: &str) -> Result<(Paper, Folds)> {
     // Split the content into 2 parts
     let (paper_content, folds_content) = contents.trim().split_once("\n\n").unwrap();
@@ -152,10 +152,12 @@ fn apply_fold(paper: &Paper, fold: &Fold) -> Result<Paper> {
     };
 
     let mut new_dot_array = vec![vec![false; new_width]; new_height];
+    /*
     println!(
         "new dimensions: heigth: {} width: {}",
         new_height, new_width
     );
+    */
 
     paper.dots.iter().enumerate().for_each(|(row, r)| {
         r.iter().enumerate().for_each(|(col, dot)| {
