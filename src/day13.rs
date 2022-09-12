@@ -66,18 +66,15 @@ pub fn day_13() -> Result<()> {
     //let contents = util::read_file("./resources/day13_small.txt").expect("Could not open file");
     let contents = util::read_file("./resources/day13.txt").expect("Could not open file");
 
-    //println!("contents: \n{}", contents);
     let (paper, folds) = parse(&contents)?;
-    //println!("paper:\n{}", paper);
     println!("folds:\n{:?}", folds);
     let part_1_paper = apply_fold(&paper, folds.first().unwrap()).unwrap();
-    //print!("paper:\n{}", paper);
     println!("Count (part 1): {}", part_1_paper.count_dots());
     // That the 'fold' function is super appropriate for folding a transparent
     // paper repeatedly must have been intentionnal.
     let final_paper = folds.iter().fold(paper, |p, f| apply_fold(&p, f).unwrap());
 
-    print!("Paper (part 2):\n{}", final_paper);
+    println!("Paper (part 2):\n{}", final_paper);
     Ok(())
 }
 
@@ -141,7 +138,6 @@ fn parse_instruction(line: &str) -> Result<Fold> {
 }
 
 fn apply_fold(paper: &Paper, fold: &Fold) -> Result<Paper> {
-    // Find the dimensions of the new paper after being folded
     let new_height = match fold.direction {
         FoldDirection::Horizontal => fold.position,
         FoldDirection::Vertical => paper.height,
@@ -152,33 +148,18 @@ fn apply_fold(paper: &Paper, fold: &Fold) -> Result<Paper> {
     };
 
     let mut new_dot_array = vec![vec![false; new_width]; new_height];
-    /*
-    println!(
-        "new dimensions: heigth: {} width: {}",
-        new_height, new_width
-    );
-    */
-
     paper.dots.iter().enumerate().for_each(|(row, r)| {
         r.iter().enumerate().for_each(|(col, dot)| {
-            //println!("row, col: {},{}", row, col);
             let adjusted_col = if col > new_width - 1 {
-                //(paper.width - 1) - col
                 fold.position - (col - fold.position)
             } else {
                 col
             };
             let adjusted_row = if row > new_height - 1 {
-                //(paper.height - 1) - row
-                //row - (row - (new_height - 1))
                 fold.position - (row - fold.position)
             } else {
                 row
             };
-            //println!(
-            //    "adjusted_row, adjusted_col: {},{}",
-            //    adjusted_row, adjusted_col
-            //);
             if adjusted_row < new_height && adjusted_col < new_width {
                 new_dot_array[adjusted_row][adjusted_col] |= *dot;
             }
