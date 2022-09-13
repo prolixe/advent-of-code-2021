@@ -9,7 +9,8 @@
 //mod day09;
 //mod day11;
 //mod day12;
-mod day13;
+//mod day13;
+mod day14;
 mod util;
 
 fn main() {
@@ -22,5 +23,6 @@ fn main() {
     //day09::day_09().unwrap();
     //day11::day_11().unwrap();
     //day12::day_12().unwrap();
-    day13::day_13().unwrap();
+    //day13::day_13().unwrap();
+    day14::day_14().unwrap();
 }
