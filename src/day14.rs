@@ -1,12 +1,16 @@
 use crate::util::Result;
 
-use std::slice::from_ref;
-use std::str::from_utf8;
+use std::collections::HashMap;
+use std::convert::TryInto;
 use std::usize::MAX;
-use std::{collections::HashMap, convert::TryInto};
 
 type Pair = (u8, u8);
-type Polymer = Vec<u8>;
+
+#[derive(Debug, PartialEq)]
+struct Polymer {
+    map: HashMap<Pair, usize>,
+    last_elem: u8,
+}
 
 #[derive(Debug)]
 struct Rules {
@@ -15,42 +19,47 @@ struct Rules {
 
 pub fn day_14() -> Result<()> {
     let contents = include_str!("../resources/day14.txt");
-    println!("{}", contents);
     let (mut polymer, rules) = parse(contents)?;
-    println!("{:?}", polymer);
-    println!("{:?}", rules);
     for _ in 0..10 {
         polymer = step(&polymer, &rules).unwrap();
     }
-    println!("{:?}", from_utf8(&polymer));
-    println!("{:?}", diff_most_and_least_common_elem(&polymer));
-
+    println!("Part 1: {:?}", diff_most_and_least_common_elem(&polymer));
+    for _ in 10..40 {
+        polymer = step(&polymer, &rules).unwrap();
+    }
+    println!("Part 2: {:?}", diff_most_and_least_common_elem(&polymer));
     Ok(())
 }
 
 fn parse(contents: &str) -> Result<(Polymer, Rules)> {
     let (template, rules) = contents.trim().split_once("\n\n").unwrap();
     let rules = Rules::parse(rules);
-    Ok((template.as_bytes().to_vec(), rules))
+    let polymer = Polymer::parse(template).unwrap();
+    Ok((polymer, rules))
 }
 
-fn count_elements(polymer: &Polymer) -> HashMap<&u8, usize> {
-    let mut hashmap = HashMap::new();
-    for elem in polymer {
-        if hashmap.contains_key(elem) {
-            *hashmap.get_mut(elem).unwrap() += 1;
-        } else {
-            hashmap.insert(elem, 1);
-        }
+fn count_elements(polymer: &Polymer) -> HashMap<u8, usize> {
+    // Take the first element of each "pairs", since they are forming a long
+    // link. Add the last element at the end, since it's not the start of a pair
+    let last_elem = polymer.last_elem;
+    let mut elem_count: HashMap<u8, usize> = HashMap::new();
+
+    for (pair, count) in polymer.map.iter() {
+        elem_count
+            .entry(pair.0)
+            .and_modify(|c| *c += count)
+            .or_insert(*count);
     }
-    hashmap
+
+    elem_count.entry(last_elem).and_modify(|count| *count += 1);
+    elem_count
 }
 
 fn diff_most_and_least_common_elem(polymer: &Polymer) -> usize {
     let counted_elem = count_elements(polymer);
     let mut min = MAX;
     let mut max = 0usize;
-    for (elem, count) in counted_elem.into_iter() {
+    for (_, count) in counted_elem.into_iter() {
         if count > max {
             max = count;
         }
@@ -58,7 +67,7 @@ fn diff_most_and_least_common_elem(polymer: &Polymer) -> usize {
             min = count;
         }
     }
-    (max - min)
+    max - min
 }
 
 impl Rules {
@@ -79,44 +88,102 @@ impl Rules {
         Self { map: hashmap }
     }
 
-    fn apply(&self, pair: &Pair) -> Option<Vec<u8>> {
-        self.map.get(pair).map(|elem| vec![pair.0, *elem])
+    fn apply(&self, pair: &Pair) -> Option<(Pair, Pair)> {
+        let new_element = self.map.get(pair);
+        new_element.copied().map(|e| ((pair.0, e), (e, pair.1)))
+    }
+}
+
+impl Polymer {
+    fn new(last_elem: u8) -> Self {
+        Polymer {
+            map: HashMap::new(),
+            last_elem,
+        }
+    }
+
+    fn parse(content: &str) -> Result<Self> {
+        let map_tuple = content
+            .trim()
+            .as_bytes()
+            .windows(2)
+            .map(|pair| (pair[0], pair[1]));
+
+        let last_elem = *content.as_bytes().last().unwrap();
+        let mut polymer = Self::new(last_elem);
+        for pair in map_tuple {
+            polymer.add(&pair, 1);
+        }
+
+        Ok(polymer)
+    }
+
+    fn add(&mut self, pair: &Pair, times: usize) {
+        self.map
+            .entry(*pair)
+            .and_modify(|counter| *counter += times)
+            .or_insert(times);
     }
 }
 
 fn step(polymer: &Polymer, rules: &Rules) -> Result<Polymer> {
-    let mut new_polymer: Polymer = polymer
-        .windows(2)
-        .flat_map(|pair| {
-            rules
-                .apply(&(pair[0], pair[1]))
-                .unwrap_or_else(|| pair.to_vec())
-        })
-        .collect();
-    let last_elem = polymer.get(polymer.len() - 1).unwrap();
-    new_polymer.push(*last_elem);
+    // Every pair produce 2 new pairs according to the rules and produce a new
+    // polymer.
+    let mut new_polymer = Polymer::new(polymer.last_elem);
+
+    for (pair, count) in polymer.map.iter() {
+        let maybe_pairs = rules.apply(pair);
+        if let Some(pairs) = maybe_pairs {
+            new_polymer.add(&pairs.0, *count);
+            new_polymer.add(&pairs.1, *count);
+        }
+    }
+
     Ok(new_polymer)
 }
 
 #[test]
 fn apply_first_step() {
     let contents = include_str!("../resources/day14_small.txt");
-    let (polymer, rules) = parse(contents).unwrap();
 
-    let step_1 = step(&polymer, &rules).unwrap();
-    assert_eq!(from_utf8(&step_1).unwrap(), "NCNBCHB");
+    let (mut polymer, rules) = parse(contents).unwrap();
+    polymer = step(&polymer, &rules).unwrap();
+
+    let expect_polymer = Polymer::parse("NCNBCHB").unwrap();
+    assert_eq!(polymer, expect_polymer);
 }
 
 #[test]
 fn apply_4_steps() {
     let contents = include_str!("../resources/day14_small.txt");
     let (mut polymer, rules) = parse(contents).unwrap();
-
     for _ in 0..4 {
         polymer = step(&polymer, &rules).unwrap();
     }
-    assert_eq!(
-        from_utf8(&polymer).unwrap(),
-        "NBBNBNBBCCNBCNCCNBBNBBNBBBNBBNBBCBHCBHHNHCBBCBHCB"
-    );
+
+    let expect_polymer =
+        Polymer::parse("NBBNBNBBCCNBCNCCNBBNBBNBBBNBBNBBCBHCBHHNHCBBCBHCB").unwrap();
+    assert_eq!(polymer, expect_polymer);
+}
+
+#[test]
+fn count_polymer() {
+    let polymer = Polymer::parse("NNCB").unwrap();
+
+    let count = count_elements(&polymer);
+
+    let n = 'N'.try_into().unwrap();
+    assert_eq!(*count.get(&n).unwrap(), 2usize)
+}
+
+#[test]
+fn apply_10_steps() {
+    let contents = include_str!("../resources/day14_small.txt");
+    let (mut polymer, rules) = parse(contents).unwrap();
+    for _ in 0..10 {
+        polymer = step(&polymer, &rules).unwrap();
+    }
+    let diff = diff_most_and_least_common_elem(&polymer);
+
+    assert_eq!(diff, 1588);
 }
